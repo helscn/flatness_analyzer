@@ -2,16 +2,8 @@
 SETLOCAL ENABLEEXTENSIONS
 
 SET compile_name=Flatness
-SET compile_path=%~dp0
-SET env_path=%~dp0
-SET compile_file=%compile_path%\%compile_name%.py
 
-
-IF EXIST "%compile_path%\icon.ico" (
-	SET package_icon=--icon "%compile_path%\icon.ico"
-) ELSE (
-	SET package_icon= 
-)
+SET add_data=--add-data "ui\*.*;.\ui"
 
 REM SET compile_mode=--onefile
 SET compile_mode=--onedir
@@ -19,45 +11,55 @@ SET compile_mode=--onedir
 REM SET show_console=--console
 SET show_console=--noconsole
 
+
+SET compile_path=%~dp0
+SET env_path=%~dp0
+SET compile_file=%compile_path%\%compile_name%.py
+
+IF EXIST "%compile_path%icon.ico" (
+	SET package_icon=--icon "%compile_path\%icon.ico"
+) ELSE (
+	SET package_icon= 
+)
+
+IF EXIST "%compile_path%\file_version_info.txt" (
+	SET version_file=--version-file "%compile_path\%file_version_info.txt"
+) ELSE (
+	SET version_file= 
+)
+
+ECHO.
 IF EXIST "%compile_path%\.env\Scripts\activate.bat" (
-	ECHO ÕıÔÚ¼¤»î½Å±¾ÔËĞĞµÄ Python ĞéÄâ»·¾³...
+	ECHO [32mÕıÔÚ¼¤»î½Å±¾ÔËĞĞµÄ Python ĞéÄâ»·¾³...[0m
 	SET env_path=%compile_path%\.env
 	CALL "%compile_path%\.env\Scripts\activate.bat"
 )
 IF EXIST %compile_path%\.venv\Scripts\activate.bat (
-	ECHO ÕıÔÚ¼¤»î½Å±¾ÔËĞĞµÄ Python ĞéÄâ»·¾³...
+	ECHO [32mÕıÔÚ¼¤»î½Å±¾ÔËĞĞµÄ Python ĞéÄâ»·¾³...[0m
 	SET env_path=%compile_path%\.venv
 	CALL "%compile_path%\.venv\Scripts\activate.bat"
 )
 
 ECHO.
-ECHO PyInstaller %compile_mode% %show_console% %package_icon%  %version_file%  %compile_name% %compile_file%
-pyinstaller %compile_mode% %show_console% %package_icon% --name %compile_name% "%compile_file%"
+ECHO [31mPyInstaller %compile_mode% %show_console% %version_file% %package_icon% %add_data% --name %compile_name% "%compile_file%"
+ECHO [90m
+pyinstaller %compile_mode% %show_console% %version_file% %package_icon% %add_data% --name %compile_name% "%compile_file%"
 IF ERRORLEVEL 1 (
 	ECHO.
-	ECHO ´ò°ü Python ½Å±¾Ê±³öÏÖ´íÎó! 
+	ECHO [31m´ò°ü Python ½Å±¾Ê±³öÏÖ´íÎó! [0m
 ) ELSE (
-	XCOPY %compile_path%\ui %compile_path%\dist\%compile_name%\ui /I /Q
 	ECHO.
-	ECHO  ½Å±¾ %compile_file% ´ò°üÍê³É¡£
-)
-
-
-IF EXIST "%compile_path%\file_version_info.txt" (
-	IF EXIST "%env_path%\Lib\site-packages\PyInstaller\utils\cliutils\set_version.py" (
-		ECHO ¶Ô´ò°ü³ÌĞòĞ´ÈëÎÄ¼ş°æ±¾ĞÅÏ¢...
-		python "%env_path%\Lib\site-packages\PyInstaller\utils\cliutils\set_version.py" "%compile_path%\file_version_info.txt" "%compile_path%\dist\%compile_name%\%compile_name%.exe" 
-	)
+	ECHO [32m½Å±¾ %compile_file% ´ò°üÍê³É¡£[0m
 )
 
 IF EXIST "%compile_path%\.env\Scripts\deactivate.bat" (
 	ECHO.
-	ECHO ÕıÔÚÍË³ö½Å±¾ÔËĞĞµÄ Python ĞéÄâ»·¾³...
+	ECHO [32mÕıÔÚÍË³ö½Å±¾ÔËĞĞµÄ Python ĞéÄâ»·¾³...[0m
 	CALL "%compile_path%\.env\Scripts\deactivate.bat"
 )
 IF EXIST "%compile_path%\.venv\Scripts\deactivate.bat" (
 	ECHO.
-	ECHO ÕıÔÚÍË³ö½Å±¾ÔËĞĞµÄ Python ĞéÄâ»·¾³...
+	ECHO [32mÕıÔÚÍË³ö½Å±¾ÔËĞĞµÄ Python ĞéÄâ»·¾³...[0m
 	CALL "%compile_path%\.venv\Scripts\deactivate.bat"
 )
 ECHO.
