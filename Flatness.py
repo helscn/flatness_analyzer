@@ -10,6 +10,8 @@ import xlrd
 import math
 import csv
 import json
+import chardet
+import re
 import sys
 import os
 
@@ -41,7 +43,7 @@ class MainWindow(QMainWindow):
     def initUi(self):
         self.updateBasePoints()
         self.sourceFileFormatSelect.setCurrentText(self.currentFileType)
-        self.setWindowTitle("平整度分析程序 v1.0")
+        self.setWindowTitle("平整度分析程序 v1.0.1")
         self.setWindowIcon(QIcon(os.path.join(BASE_DIR, 'ui/icon.ico')))
         self.selectFileButton.setIcon(
             QIcon(os.path.join(BASE_DIR, 'ui/open.png')))
@@ -405,6 +407,22 @@ class MainWindow(QMainWindow):
                 break
         return data
 
+    def load_txt(self, file_path):
+        # 导入三次元测量数据 .txt 文件
+        data = []
+        with open(file_path, mode='rb') as f:
+            encoding = chardet.detect(f.read())['encoding']
+        pattern = re.compile(
+            r'.*X 坐标\s+(-?\d+\.?\d*).*Y 坐标\s+(-?\d+\.?\d*).*Z 坐标\s+(-?\d+\.?\d*).*')
+        with open(file_path, mode='r', encoding=encoding, errors='ignore') as f:
+            for line in f:
+                result = pattern.match(line)
+                if result:
+                    x, y, z = result.groups()
+                    data.append(
+                        [float(x), float(y), float(z)])
+        return data
+
     def importData(self):
         # 导入数据文件
         filePath = self.selectedFilePath.text()
@@ -426,6 +444,8 @@ class MainWindow(QMainWindow):
                 data = self.load_xls(filePath)
             elif self.currentFileType == 'CSV文本文件 (*.csv)':
                 data = self.load_csv(filePath)
+            elif self.currentFileType == '三次元测量数据 (*.txt)':
+                data = self.load_txt(filePath)
             else:
                 QMessageBox.critical(
                     self, '错误', '没有合适的处理器以导入当前的数据文件!', QMessageBox.Ok)
@@ -468,7 +488,7 @@ class MainWindow(QMainWindow):
 
             ws1.column_dimensions['A'].width = 15
             ws1.cell(row=1, column=1, value='分组数')
-            ws1.cell(row=2, column=1, value='量测点数')
+            ws1.cell(row=2, column=1, value='每组量测点数')
             ws1.cell(row=3, column=1, value='平面参考点')
             ws1.cell(row=4, column=1, value="Z'标准化")
             ws1.cell(row=5, column=1, value='整板平整度公差')
@@ -642,6 +662,21 @@ class MainWindow(QMainWindow):
             self.localFlatnessTable.setItem(row, 3, item3)
             row += 1
 
+    def getAxesLimit(self, serialx, serialy):
+        # 根据X、Y坐标数据计算图表坐标轴显示范围
+        xmin = np.min(serialx)
+        xmax = np.max(serialx)
+        xavg = (xmin+xmax)/2
+        ymin = np.min(serialy)
+        ymax = np.max(serialy)
+        yavg = (ymin+ymax)/2
+        xrange = xmax-xmin
+        yrange = ymax-ymin
+        if xrange > yrange:
+            return xmin, xmax, yavg-yrange*xrange/yrange/2, yavg+yrange*xrange/yrange/2
+        else:
+            return xavg-xrange*yrange/xrange/2, xavg+xrange*yrange/xrange/2, ymin, ymax
+
     def showGraph(self):
         # 显示三维曲面图
         if self.tabWidget.currentIndex() != 2:
@@ -673,6 +708,12 @@ class MainWindow(QMainWindow):
             xnew, ynew, znew, cmap=color_map)
         self.MplWidget.colorbar = self.MplWidget.figure.colorbar(
             surf, shrink=0.6, aspect=10)
+
+        # 设定X、Y坐标轴范围
+        minX, maxX, minY, maxY = self.getAxesLimit(x, y)
+        self.MplWidget.axes.set_xlim(minX, maxX)
+        self.MplWidget.axes.set_ylim(minY, maxY)
+
         self.MplWidget.canvas.draw()
 
     def showGraph1(self):
@@ -700,6 +741,11 @@ class MainWindow(QMainWindow):
 
         contour = self.MplWidget1.axes.contourf(
             xnew, ynew, znew, cmap=color_map)
+
+        # 设定X、Y坐标轴范围
+        minX, maxX, minY, maxY = self.getAxesLimit(x, y)
+        self.MplWidget1.axes.set_xlim(minX, maxX)
+        self.MplWidget1.axes.set_ylim(minY, maxY)
 
         self.MplWidget1.axes.scatter(x, y,  c='r', marker='o')
         currentRow = self.localFlatnessTable.currentItem()

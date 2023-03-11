@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>平整度分析程序 v1.0</string>
+   <string>平整度分析程序</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -103,37 +103,6 @@
             <property name="text">
              <string>源数据格式：</string>
             </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QComboBox" name="sourceFileFormatSelect">
-            <property name="minimumSize">
-             <size>
-              <width>175</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>175</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <item>
-             <property name="text">
-              <string>Excel工作簿 (*.xlsx)</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>旧Excel工作簿 (*.xls)</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>CSV文本文件 (*.csv)</string>
-             </property>
-            </item>
            </widget>
           </item>
           <item row="3" column="0">
@@ -480,6 +449,53 @@
                </size>
               </property>
              </spacer>
+            </item>
+           </layout>
+          </item>
+          <item row="2" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayout_11">
+            <item>
+             <widget class="QComboBox" name="sourceFileFormatSelect">
+              <property name="minimumSize">
+               <size>
+                <width>175</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>175</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <item>
+               <property name="text">
+                <string>三次元测量数据 (*.txt)</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Excel工作簿 (*.xlsx)</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>旧Excel工作簿 (*.xls)</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>CSV文本文件 (*.csv)</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_18">
+              <property name="text">
+               <string>  （除三次元数据测量数据外，其它文件格式默认X、Y、Z坐标数据保存在前三列）</string>
+              </property>
+             </widget>
             </item>
            </layout>
           </item>

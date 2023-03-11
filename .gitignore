@@ -1,5 +1,6 @@
-# Default config template
+# Useless files
 default.tpl
+ui/mainWindow.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
