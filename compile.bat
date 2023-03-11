@@ -3,7 +3,7 @@ SETLOCAL ENABLEEXTENSIONS
 
 SET compile_name=Flatness
 
-SET add_data=--add-data "ui\*.*;.\ui"
+SET add_data=--add-data "ui\*.*;.\ui" --add-data ".\changelog.md;.\changelog.md"
 
 REM SET compile_mode=--onefile
 SET compile_mode=--onedir
@@ -14,10 +14,10 @@ SET show_console=--noconsole
 
 SET compile_path=%~dp0
 SET env_path=%~dp0
-SET compile_file=%compile_path%\%compile_name%.py
+SET compile_file=%compile_path%%compile_name%.py
 
 IF EXIST "%compile_path%icon.ico" (
-	SET package_icon=--icon "%compile_path\%icon.ico"
+	SET package_icon=--icon "%compile_path%icon.ico"
 ) ELSE (
 	SET package_icon= 
 )
