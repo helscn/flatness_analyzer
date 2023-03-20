@@ -43,7 +43,7 @@ class MainWindow(QMainWindow):
     def initUi(self):
         self.updateBasePoints()
         self.sourceFileFormatSelect.setCurrentText(self.currentFileType)
-        self.setWindowTitle("平整度分析程序 v1.0.1")
+        self.setWindowTitle("平整度分析程序 v1.0.2")
         self.setWindowIcon(QIcon(os.path.join(BASE_DIR, 'ui/icon.ico')))
         self.selectFileButton.setIcon(
             QIcon(os.path.join(BASE_DIR, 'ui/open.png')))
@@ -147,7 +147,8 @@ class MainWindow(QMainWindow):
             'RbfFunction': self.functionSelect.currentIndex(),
             'GraphTheme': self.colorSelect.currentIndex(),
             'LocalFlatnessTolerance': self.localFlatnessTolerance.value(),
-            'LocalFlatnessLimit': self.localFlatnessLimit.value()
+            'LocalFlatnessLimit': self.localFlatnessLimit.value(),
+            'CentralZoneLimit': self.centralZoneLimit.value()
         }
         try:
             with open(filePath, 'w', encoding='utf-8') as f:
@@ -195,6 +196,8 @@ class MainWindow(QMainWindow):
                     config.get('RbfFunction', 0))
                 self.colorSelect.setCurrentIndex(
                     config.get('GraphTheme', 0))
+                self.centralZoneLimit.setValue(
+                    config.get('CentralZoneLimit', 50))
             return True
         except Exception as e:
             QMessageBox.critical(
@@ -234,9 +237,11 @@ class MainWindow(QMainWindow):
             'normalizeZ': self.normalizeSelect.currentText(),
             'flatnessTolerance': self.flatnessTolerance.value(),
             'localFlatnessTolerance': self.localFlatnessTolerance.value(),
-            'localFlatnessLimit': self.localFlatnessLimit.value()
+            'localFlatnessLimit': self.localFlatnessLimit.value(),
+            'centralZoneLimit': self.centralZoneLimit.value()/100
         }
         if len(self.basePointsSelect.selectedIndex()) >= 3:
+            # 当选择了三个或以上理想平面参考点时，计算理想平面方程系数
             for group in data:
                 matrixA = []
                 matrixB = []
@@ -254,25 +259,59 @@ class MainWindow(QMainWindow):
                 coeffD = -1 * matrixCoeff[2][0]
                 constant = math.sqrt(coeffA*coeffA+coeffB*coeffB+coeffC*coeffC)
 
+                minX = None
+                maxX = None
+                minY = None
+                maxY = None
                 for point in group:
                     point.append(
                         (coeffA*point[0]+coeffB*point[1]+coeffC*point[2]+coeffD)/constant)
+                    if minX is None or point[0] < minX:
+                        minX = point[0]
+                    if maxX is None or point[0] > maxX:
+                        maxX = point[0]
+                    if minY is None or point[1] < minY:
+                        minY = point[1]
+                    if maxY is None or point[1] > maxY:
+                        maxY = point[1]
+
                 group[0].append({
                     'A': coeffA,
                     'B': coeffB,
                     'C': coeffC,
-                    'D': coeffD
+                    'D': coeffD,
+                    'minX': minX,
+                    'maxX': maxX,
+                    'minY': minY,
+                    'maxY': maxY
                 })
         else:
-            # 如果不计算理想参考平面，直接使用量测的Z值进行计算
+            # 如果不计算理想参考平面，直接使用量测的Z值进行计算，平面方程 Z=0
             for group in data:
+                minX = None
+                maxX = None
+                minY = None
+                maxY = None
                 for point in group:
                     point.append(point[2])  # Z'
+                    if minX is None or point[0] < minX:
+                        minX = point[0]
+                    if maxX is None or point[0] > maxX:
+                        maxX = point[0]
+                    if minY is None or point[1] < minY:
+                        minY = point[1]
+                    if maxY is None or point[1] > maxY:
+                        maxY = point[1]
+
                 group[0].append({
                     'A': 0,
                     'B': 0,
                     'C': 1,
-                    'D': 0
+                    'D': 0,
+                    'minX': minX,
+                    'maxX': maxX,
+                    'minY': minY,
+                    'maxY': maxY
                 })
 
         # 正规化处理 Z 值并更新平整度结果
@@ -280,17 +319,59 @@ class MainWindow(QMainWindow):
         row = 0
 
         for group in data:
+            # 数据Z'统计值
             min = None
             max = None
             sum = 0
+
+            # 计算中心形貌统计值
+            centralMinZ = None
+            centralMaxZ = None
+            marginalSum = 0
+            marginalCount = 0
+
+            # 迭代计算最小、最大、加总、平均值
             for point in group:
+                # 计算总体Z'的统计值
                 if min is None or point[3] < min:
                     min = point[3]
                 if max is None or point[3] > max:
                     max = point[3]
                 sum += point[3]
-            avg = sum/len(group)
 
+                # 计算中心区域Z'统计值
+                minX = group[0][4]['minX']
+                maxX = group[0][4]['maxX']
+                minY = group[0][4]['minY']
+                maxY = group[0][4]['maxY']
+                rangeX = maxX-minX
+                rangeY = maxY-minY
+
+                if abs(2*(point[0]-minX)/rangeX - 1) < self.config['centralZoneLimit'] and abs(2*(point[1]-minY)/rangeY - 1) < self.config['centralZoneLimit']:
+                    # 当前量测点为板中心位置时
+                    if centralMinZ is None or point[3] < centralMinZ:
+                        centralMinZ = point[3]
+                    if centralMaxZ is None or point[3] > centralMaxZ:
+                        centralMaxZ = point[3]
+                else:
+                    # 当前量测点为板边位置时
+                    marginalSum += point[3]
+                    marginalCount += 1
+
+            # 计算总体平均值
+            avg = sum/len(group)
+            marginalAvg = marginalSum/marginalCount
+            group[0][4]['shape'] = 'unknow'
+            if centralMinZ is not None:
+                if centralMinZ > marginalAvg and centralMaxZ > marginalAvg:
+                    # 中心凸起
+                    group[0][4]['shape'] = 'convex'
+                elif centralMinZ < marginalAvg and centralMaxZ < marginalAvg:
+                    # 中心下凹
+                    group[0][4]['shape'] = 'concave'
+                else:
+                    # 凹凸不平
+                    group[0][4]['shape'] = 'wavy convex'
             if normalizeType == 0:  # 不处理
                 offset = 0
             elif normalizeType == 1:  # 正值化
@@ -309,7 +390,7 @@ class MainWindow(QMainWindow):
             group[0][4]['flatness'] = max-min
         self.data = data
 
-        # 更新平整度结果汇总表
+        # 更新平整度数据分析结果汇总表
         row = 0
         self.flatnessTable.setRowCount(len(data))
         for group in data:
@@ -317,24 +398,27 @@ class MainWindow(QMainWindow):
             item0 = QTableWidgetItem('{:.4f}'.format(group[0][4]['min']))
             item1 = QTableWidgetItem('{:.4f}'.format(group[0][4]['max']))
             item2 = QTableWidgetItem('{:.4f}'.format(flatness))
+            item3 = QTableWidgetItem(group[0][4]['shape'])
             if flatness <= self.flatnessTolerance.value():
-                item3 = QTableWidgetItem('Acc')
-                item3.setBackground(QColor(100, 200, 100))
+                item4 = QTableWidgetItem('Acc')
+                item4.setBackground(QColor(100, 200, 100))
                 group[0][4]['judge'] = 'Acc'
             else:
-                item3 = QTableWidgetItem('Rej')
-                item3.setBackground(QColor(200, 50, 50))
+                item4 = QTableWidgetItem('Rej')
+                item4.setBackground(QColor(200, 50, 50))
                 group[0][4]['judge'] = 'Rej'
 
             item0.setTextAlignment(Qt.AlignCenter)
             item1.setTextAlignment(Qt.AlignCenter)
             item2.setTextAlignment(Qt.AlignCenter)
             item3.setTextAlignment(Qt.AlignCenter)
+            item4.setTextAlignment(Qt.AlignCenter)
 
             self.flatnessTable.setItem(row, 0, item0)
             self.flatnessTable.setItem(row, 1, item1)
             self.flatnessTable.setItem(row, 2, item2)
             self.flatnessTable.setItem(row, 3, item3)
+            self.flatnessTable.setItem(row, 4, item4)
             row += 1
 
         # 计算局部平整度
@@ -353,7 +437,7 @@ class MainWindow(QMainWindow):
                         groupDeltaZ.append([i, j, distance, abs(p2[3]-p1[3])])
             self.deltaZ.append(groupDeltaZ)
 
-        # 更新数据组别选择
+        # 更新当前选择的数据组别
         self.currentIndexSelect.clear()
         self.currentIndexSelect1.clear()
         groups = ["第 {} 组".format(i+1) for i in range(len(data))]
@@ -472,11 +556,11 @@ class MainWindow(QMainWindow):
         if not filePath:
             return
         try:
-
             wb = openpyxl.Workbook()
             ws1 = wb.active
 
             highlight = openpyxl.styles.Font(color='FF0000')
+            bold = openpyxl.styles.Font(bold=True)
             alignleft = openpyxl.styles.Alignment(
                 horizontal='left', vertical='center')
             aligncenter = openpyxl.styles.Alignment(
@@ -493,6 +577,7 @@ class MainWindow(QMainWindow):
             ws1.cell(row=4, column=1, value="Z'标准化")
             ws1.cell(row=5, column=1, value='整板平整度公差')
             ws1.cell(row=6, column=1, value='局部平整度公差')
+            ws1.cell(row=7, column=1, value='中心区域范围')
             ws1.cell(row=1, column=2, value=len(self.data))
             ws1.cell(row=1, column=2).alignment = alignleft
             ws1.cell(row=2, column=2, value=self.config['groupSize'])
@@ -503,14 +588,17 @@ class MainWindow(QMainWindow):
             ws1.cell(row=5, column=2).alignment = alignleft
             ws1.cell(row=6, column=2, value='{} / {}'.format(
                 self.config['localFlatnessTolerance'], self.config['localFlatnessLimit']))
+            ws1.cell(row=7, column=2, value='{}%'.format(
+                int(self.config['centralZoneLimit']*100)))
 
-            ws1.cell(row=8, column=1, value='分组编号')
-            ws1.cell(row=8, column=2, value="最小Z'")
-            ws1.cell(row=8, column=3, value="最大Z'")
-            ws1.cell(row=8, column=4, value='平整度')
-            ws1.cell(row=8, column=5, value='判定')
-            ws1.cell(row=8, column=5).alignment = aligncenter
-            ws1.cell(row=8, column=6, value='参考平面方程')
+            ws1.cell(row=9, column=1, value='分组编号')
+            ws1.cell(row=9, column=2, value="最小Z'")
+            ws1.cell(row=9, column=3, value="最大Z'")
+            ws1.cell(row=9, column=4, value='平整度')
+            ws1.cell(row=9, column=5, value='中心形貌')
+            ws1.cell(row=9, column=6, value='判定')
+            ws1.cell(row=9, column=6).alignment = aligncenter
+            ws1.cell(row=9, column=7, value='参考平面方程')
 
             ws2.cell(row=1, column=1, value='分组编号')
             ws2.cell(row=1, column=2, value='量测点')
@@ -533,26 +621,41 @@ class MainWindow(QMainWindow):
                 group = self.data[i]
                 deltaZ = self.deltaZ[i]
                 info = group[0][4]
-                ws1.cell(row=i+9, column=1, value=i+1)
-                ws1.cell(row=i+9, column=2, value=info['min'])
-                ws1.cell(row=i+9, column=3, value=info['max'])
-                ws1.cell(row=i+9, column=4, value=info['flatness'])
-                ws1.cell(row=i+9, column=5, value=info['judge'])
-                ws1.cell(row=i+9, column=5).alignment = aligncenter
+                ws1.cell(row=i+10, column=1, value=i+1)
+                ws1.cell(row=i+10, column=2, value=info['min'])
+                ws1.cell(row=i+10, column=3, value=info['max'])
+                ws1.cell(row=i+10, column=4, value=info['flatness'])
+                ws1.cell(row=i+10, column=5, value=info['shape'])
+                ws1.cell(row=i+10, column=6, value=info['judge'])
+                ws1.cell(row=i+10, column=6).alignment = aligncenter
                 if info['judge'] == 'Rej':
-                    ws1.cell(row=i+9, column=5).font = highlight
-                ws1.cell(row=i+9, column=6, value='Z = {:.8e}X {:+.8e}Y {:+.8e}'.format(
+                    ws1.cell(row=i+10, column=5).font = highlight
+                ws1.cell(row=i+10, column=7, value='Z = {:.8e}X {:+.8e}Y {:+.8e}'.format(
                     -info['A'],
                     -info['B'],
                     -info['D'],
                 ))
                 for j in range(len(group)):
+                    point = group[j]
                     ws2.cell(row=row1, column=1, value=i+1)
                     ws2.cell(row=row1, column=2, value=j+1)
-                    ws2.cell(row=row1, column=3, value=group[j][0])
-                    ws2.cell(row=row1, column=4, value=group[j][1])
-                    ws2.cell(row=row1, column=5, value=group[j][2])
-                    ws2.cell(row=row1, column=6, value=group[j][3])
+                    ws2.cell(row=row1, column=3, value=point[0])
+                    ws2.cell(row=row1, column=4, value=point[1])
+                    ws2.cell(row=row1, column=5, value=point[2])
+                    ws2.cell(row=row1, column=6, value=point[3])
+
+                    minX = group[0][4]['minX']
+                    maxX = group[0][4]['maxX']
+                    minY = group[0][4]['minY']
+                    maxY = group[0][4]['maxY']
+                    if abs(2*(point[0]-minX)/(maxX-minX) - 1) < self.config['centralZoneLimit'] and abs(2*(point[1]-minY)/(maxY-minY) - 1) < self.config['centralZoneLimit']:
+                        # 如果为中心区域量测点，将编号加粗
+                        ws2.cell(row=row1, column=2).font = bold
+                        ws2.cell(row=row1, column=3).font = bold
+                        ws2.cell(row=row1, column=4).font = bold
+                        ws2.cell(row=row1, column=5).font = bold
+                        ws2.cell(row=row1, column=6).font = bold
+
                     row1 += 1
                 for v in deltaZ:
                     ws3.cell(row=row2, column=1, value=i+1)

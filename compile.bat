@@ -3,7 +3,7 @@ SETLOCAL ENABLEEXTENSIONS
 
 SET compile_name=Flatness
 
-SET add_data=--add-data "ui\*.*;.\ui" --add-data ".\changelog.md;.\changelog.md"
+SET add_data=--add-data "ui\*.*;.\ui" --add-data ".\changelog.md;."
 
 REM SET compile_mode=--onefile
 SET compile_mode=--onedir

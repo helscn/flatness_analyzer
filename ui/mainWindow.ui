@@ -96,6 +96,19 @@
               </property>
              </widget>
             </item>
+            <item>
+             <spacer name="horizontalSpacer_9">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
            </layout>
           </item>
           <item row="2" column="0">
@@ -172,6 +185,9 @@
                 <width>60</width>
                 <height>0</height>
                </size>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
               </property>
               <property name="minimum">
                <number>4</number>
@@ -345,6 +361,9 @@
                 <height>16777215</height>
                </size>
               </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
               <property name="decimals">
                <number>4</number>
               </property>
@@ -394,6 +413,9 @@
                 <height>16777215</height>
                </size>
               </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
               <property name="decimals">
                <number>4</number>
               </property>
@@ -425,6 +447,9 @@
                 <width>80</width>
                 <height>16777215</height>
                </size>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
               </property>
               <property name="decimals">
                <number>4</number>
@@ -496,6 +521,65 @@
                <string>  （除三次元数据测量数据外，其它文件格式默认X、Y、Z坐标数据保存在前三列）</string>
               </property>
              </widget>
+            </item>
+           </layout>
+          </item>
+          <item row="9" column="0">
+           <widget class="QLabel" name="label_19">
+            <property name="text">
+             <string>板中心范围：</string>
+            </property>
+           </widget>
+          </item>
+          <item row="9" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayout_18">
+            <item>
+             <widget class="QSpinBox" name="centralZoneLimit">
+              <property name="minimumSize">
+               <size>
+                <width>80</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>80</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+              <property name="minimum">
+               <number>10</number>
+              </property>
+              <property name="maximum">
+               <number>90</number>
+              </property>
+              <property name="value">
+               <number>50</number>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_20">
+              <property name="text">
+               <string>%  （判定量测点是否为中心区域的距离尺寸限定范围）</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_11">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
             </item>
            </layout>
           </item>
@@ -622,6 +706,9 @@
                    <property name="sortingEnabled">
                     <bool>false</bool>
                    </property>
+                   <attribute name="horizontalHeaderDefaultSectionSize">
+                    <number>85</number>
+                   </attribute>
                    <column>
                     <property name="text">
                      <string>最小 Z'</string>
@@ -641,6 +728,14 @@
                    <column>
                     <property name="text">
                      <string>平整度</string>
+                    </property>
+                    <property name="textAlignment">
+                     <set>AlignCenter</set>
+                    </property>
+                   </column>
+                   <column>
+                    <property name="text">
+                     <string>中心形貌</string>
                     </property>
                     <property name="textAlignment">
                      <set>AlignCenter</set>
