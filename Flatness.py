@@ -629,7 +629,7 @@ class MainWindow(QMainWindow):
                 ws1.cell(row=i+10, column=6, value=info['judge'])
                 ws1.cell(row=i+10, column=6).alignment = aligncenter
                 if info['judge'] == 'Rej':
-                    ws1.cell(row=i+10, column=5).font = highlight
+                    ws1.cell(row=i+10, column=6).font = highlight
                 ws1.cell(row=i+10, column=7, value='Z = {:.8e}X {:+.8e}Y {:+.8e}'.format(
                     -info['A'],
                     -info['B'],
