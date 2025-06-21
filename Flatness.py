@@ -43,7 +43,7 @@ class MainWindow(QMainWindow):
     def initUi(self):
         self.updateBasePoints()
         self.sourceFileFormatSelect.setCurrentText(self.currentFileType)
-        self.setWindowTitle("平整度分析程序 v1.0.2")
+        self.setWindowTitle("平整度分析程序 v1.0.3")
         self.setWindowIcon(QIcon(os.path.join(BASE_DIR, 'ui/icon.ico')))
         self.selectFileButton.setIcon(
             QIcon(os.path.join(BASE_DIR, 'ui/open.png')))
@@ -61,6 +61,8 @@ class MainWindow(QMainWindow):
     def initSiginal(self):
         self.selectFileButton.clicked.connect(self.selectFile)
         self.btnImportData.clicked.connect(self.importData)
+        self.sourceFileFormatSelect.currentIndexChanged[int].connect(
+            self.updateFileType)
         self.btnShowGraph.clicked.connect(self.nextTab)
         self.groupSize.valueChanged[int].connect(self.updateBasePoints)
         self.btnSaveConfig.clicked.connect(self.saveConfigFromDialog)
@@ -92,7 +94,8 @@ class MainWindow(QMainWindow):
         self.colorSelect1.currentIndexChanged[int].connect(self.showGraph1)
 
     def closeEvent(self, event):
-        self.saveConfig(self.defaultConfigFile)
+        if not os.path.isfile(self.defaultConfigFile):
+            self.saveConfig(self.defaultConfigFile)
         event.accept()
 
     def formatList(self, points):
@@ -119,6 +122,15 @@ class MainWindow(QMainWindow):
         else:
             result.append('{}-{}'.format(startPoint, endPoint))
         return ','.join(result)
+
+
+    def updateFileType(self, index):
+        if index == 0:
+            self.hasHeadlineButton.setEnabled(False)
+            self.noHeadlineButton.setEnabled(False)
+        else:
+            self.hasHeadlineButton.setEnabled(True)
+            self.noHeadlineButton.setEnabled(True)
 
     def tabChanged(self, id):
         if id == 1:
@@ -173,6 +185,7 @@ class MainWindow(QMainWindow):
                 config = json.load(f)
                 self.sourceFileFormatSelect.setCurrentIndex(
                     config.get('SourceFileFormat', 0))
+                self.updateFileType(self.sourceFileFormatSelect.currentIndex())
                 if config.get('SourceFileHeader', True):
                     self.hasHeadlineButton.setChecked(True)
                 else:
