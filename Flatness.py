@@ -2,7 +2,9 @@ from PyQt5.uic import loadUi
 from PyQt5.QtGui import QColor, QIcon
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox, QTableWidgetItem
+
 from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.backends.backend_qt5agg import FigureCanvas
 from scipy import interpolate
 import numpy as np
 import openpyxl
